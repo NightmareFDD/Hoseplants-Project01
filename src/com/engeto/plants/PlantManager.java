@@ -2,6 +2,7 @@ package com.engeto.plants;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -63,4 +64,13 @@ public class PlantManager {
         return plant.getWatering().plus(plant.getFrequency()).isBefore(today);
     }
 
+    public void sortByName(){
+        plantsList.sort(Comparator.comparing(Plant::getName));
+        logger.info("Sorted plants by name.");
+    }
+
+    public void sortByLastWateringDate(){
+        plantsList.sort(Comparator.comparing(Plant::getWatering));
+        logger.info("Sorted plants by last watering date.");
+    }
 }
