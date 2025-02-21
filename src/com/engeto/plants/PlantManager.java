@@ -70,7 +70,8 @@ public class PlantManager {
     // region Remove methods ------------------------------------------
     public static void removePlant(List<Plant> plants, int position) {
         if (!isValidIndex(position, plants)) {
-            logger.warning("Invalid position: " + position);
+            logger.warning("Removing plant at valid position: " + position);
+            System.out.println("Nelze odstranit rostlinu: Chybně zadaná pozice.");
             return;
         }
         plants.remove(position);
@@ -85,29 +86,22 @@ public class PlantManager {
 
     // region Sort methods ------------------------------------------
 
-    private static void sortByName(List<Plant> plantsList) {
-        plantsList.sort(Comparator.comparing(Plant::getName));
-        logger.info("Sorted plants by name.");
-    }
-
-    private static void sortByLastWateringDate(List<Plant> plantsList) {
-        plantsList.sort(Comparator.comparing(Plant::getWatering));
-        logger.info("Sorted plants by last watering date.");
+    private static void printSorted(List<Plant> plantsList, Comparator<Plant> comparator, String message) {
+        List<Plant> sortedList = new ArrayList<>(plantsList);
+        sortedList.sort(comparator);
+        System.out.println("\n" + message);
+        sortedList.forEach(plant -> System.out.println(plant.getName()));
     }
 
     // endregion Sort methods ------------------------------------------
 
     // region Print methods ------------------------------------------
-    public static void printSortByName(List<Plant> plantsList) {
-        sortByName(plantsList);
-        System.out.println("\nRostliny seřazené podle jména:");
-        plantsList.forEach(plant -> System.out.println(plant.getName()));
+    public static void printSortedByName(List<Plant> plantsList) {
+        printSorted(plantsList, Comparator.comparing(Plant::getName), "\nRostliny seřazené podle jména:");
     }
 
-    public static void printSortByLastWateringDate(List<Plant> plantsList) {
-        sortByLastWateringDate(plantsList);
-        System.out.println("\nRostliny seřazené podle dne poslední zálivky:");
-        plantsList.forEach(plant -> System.out.println(plant.getName()));
+    public static void printSortedByLastWateringDate(List<Plant> plantsList) {
+        printSorted(plantsList, Comparator.comparing(Plant::getWatering), "\nRostliny seřazené podle dne poslední zálivky:");
     }
 
     public static void printPlantWateringInfo(List<Plant> plants) {
@@ -130,45 +124,51 @@ public class PlantManager {
 
     // region Save and Load methods ------------------------------------------
     public List<Plant> loadPlantsFromFile(String filename) {
+        return readFile(filename);
+    }
+
+    private List<Plant> readFile(String filename) {
         List<Plant> loadedPlants = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
-            reader.lines().forEach(line -> processLine(line, loadedPlants));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                processLine(line, loadedPlants);
+            }
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "Error reading file: " + filename, e);
+            logError("Error reading file: " + filename, e);
         }
         return loadedPlants;
     }
 
     private void processLine(String line, List<Plant> loadedPlants) {
         try {
-            String[] parts = validateAndSplitLine(line);
-            Plant plant = createPlantFromParts(parts);
-            loadedPlants.add(plant);
-        } catch (PlantException | IllegalArgumentException e) {
-            logger.log(Level.WARNING, "Skipping invalid line: " + line, e);
+            loadedPlants.add(parsePlant(line));
+        } catch (IllegalArgumentException | PlantException e) {
+            logWarning("Skipping invalid line: " + line, e);
         }
     }
 
-    private String[] validateAndSplitLine(String line) {
-        String[] parts = line.split("\t"); // Assume tab-separated values
-        if (parts.length < 5) throw new IllegalArgumentException("Invalid format");
-        return parts;
+    private Plant parsePlant(String line) throws PlantException {
+        String[] parts = validateLine(line);
+        if (parts[0].isEmpty()) {
+            throw new IllegalArgumentException("Plant name cannot be empty!");
+        }
+        return new Plant(parts[0], parts[1], parseDate(parts[4]), parseDate(parts[3]), Period.ofDays(parseFrequency(parts[2])));
     }
 
-    private Plant createPlantFromParts(String[] parts) throws PlantException {
-        String name = parts[0];
-        String notes = parts[1];
-        int frequency = parseFrequency(parts[2]);
-        LocalDate watering = parseDate(parts[3]);
-        LocalDate planted = parseDate(parts[4]);
-        return new Plant(name, notes, planted, watering, Period.ofDays(frequency));
+    private String[] validateLine(String line) {
+        String[] parts = line.split("\t", -1);
+        if (parts.length < 5)
+            throw new IllegalArgumentException("Invalid format: Expected 5 fields, got " + parts.length);
+        return parts;
     }
 
     private int parseFrequency(String value) {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid frequency: " + value);
+            logger.warning("Invalid frequency: '" + value + "' → Defaulting to 7 days.");
+            return 7;
         }
     }
 
@@ -176,7 +176,8 @@ public class PlantManager {
         try {
             return LocalDate.parse(value);
         } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("Invalid date format: " + value);
+            logger.warning("Invalid date format: '" + value + "' → Defaulting to today's date.");
+            return LocalDate.now();
         }
     }
 
@@ -188,20 +189,20 @@ public class PlantManager {
 
     public void savePlantsToFile(String filename, List<Plant> plants) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
-            plants.forEach(plant -> writePlantData(writer, plant));
+            for (Plant plant : plants) {
+                writer.write(formatPlant(plant));
+                writer.newLine();
+            }
             logger.info("Successfully saved plants to file: " + filename);
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "Failed to save plants to file: " + filename, e);
+            logError("Failed to save plants to file: " + filename, e);
         }
     }
 
-    private void writePlantData(BufferedWriter writer, Plant plant) {
-        try {
-            writer.write(formatPlantData(plant));
-            writer.newLine();
-        } catch (IOException e) {
-            logger.log(Level.WARNING, "Error writing plant data: " + plant.getName(), e);
-        }
+    private String formatPlant(Plant plant) {
+        return String.join("\t", plant.getName(), plant.getNotes(),
+                String.valueOf(plant.getFrequency().getDays()),
+                plant.getWatering().toString(), plant.getPlanted().toString());
     }
 
     public static void savePlantsToNewFile(PlantManager manager, List<Plant> plants) {
@@ -213,14 +214,12 @@ public class PlantManager {
         }
     }
 
-    private String formatPlantData(Plant plant) {
-        return String.join("\t",
-                plant.getName(),
-                plant.getNotes(),
-                String.valueOf(plant.getFrequency().getDays()),
-                plant.getWatering().toString(),
-                plant.getPlanted().toString()
-        );
+    private void logError(String message, Exception e) {
+        logger.log(Level.SEVERE, message, e);
+    }
+
+    private void logWarning(String message, Exception e) {
+        logger.log(Level.WARNING, message, e);
     }
     // endregion Save and Load methods ------------------------------------------
 }

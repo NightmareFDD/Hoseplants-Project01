@@ -50,8 +50,8 @@ public class Main {
 
     private static void sortAndDisplay(List<Plant> plants) {
         //8. Seřazení rostlin ve správci seznamu podle různých kritérií a výpis seřazeného seznamu.
-        PlantManager.printSortByName(plants);
-        PlantManager.printSortByLastWateringDate(plants);
+        PlantManager.printSortedByName(plants);
+        PlantManager.printSortedByLastWateringDate(plants);
     }
 }
 
