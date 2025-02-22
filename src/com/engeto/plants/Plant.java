@@ -110,7 +110,7 @@ public class Plant {
     public String getWateringInfo() {
         LocalDate nextWatering = watering.plus(frequency);
         logger.info("Retrieved watering info for plant: " + name);
-        return String.format("Rostlina: [%s], Poslední zálivka: [%s], Příští zálivka: [%s]", name, watering, nextWatering);
+        return String.format("Název: [%s], Poslední zálivka: [%s], Příští zálivka: [%s]", name, watering, nextWatering);
     }
 
     public void doWateringNow() {
