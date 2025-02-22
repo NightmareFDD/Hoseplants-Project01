@@ -28,7 +28,7 @@ public class Plant {
     }
 
     public Plant(String name, Period frequency) throws PlantException {
-        this(name, "", LocalDate.now(), LocalDate.now(), Period.ofDays(7));
+        this(name, "", LocalDate.now(), LocalDate.now(), frequency);
     }
     // endregion Constructors
 
@@ -75,7 +75,7 @@ public class Plant {
     }
 
     public void setFrequency(Period frequency) throws PlantException {
-        if (frequency.isNegative() || frequency.isZero()) {
+        if (isValidFrequency(frequency)) {
             logger.warning("Attempted to set invalid watering frequency.");
             throw new PlantException("Watering frequency must be a positive period.");
         }
@@ -86,12 +86,16 @@ public class Plant {
 
     // region Methods
     private Period validateFrequency(Period frequency) throws PlantException {
-        if (frequency.isNegative() || frequency.isZero()) {
+        if (isValidFrequency(frequency)) {
             logger.severe("Invalid watering frequency: must be positive.");
             throw new PlantException("Watering frequency must be a positive period.");
         }
         logger.info("Valid watering frequency: " + frequency);
         return frequency;
+    }
+
+    private static boolean isValidFrequency(Period frequency){
+        return frequency.isNegative() || frequency.isZero();
     }
 
     private LocalDate validateWateringDate(LocalDate planted, LocalDate watering) throws PlantException {
@@ -114,6 +118,16 @@ public class Plant {
         logger.info("Watering done for plant: " + name);
     }
 
-    // endregion Methods
+    @Override
+    public String toString() {
+        return "Plant{" +
+                "name='" + name + '\'' +
+                ", notes='" + notes + '\'' +
+                ", planted=" + planted +
+                ", watering=" + watering +
+                ", frequency=" + frequency +
+                '}';
+    }
+// endregion Methods
 }
 

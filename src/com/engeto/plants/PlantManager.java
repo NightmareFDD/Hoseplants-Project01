@@ -74,6 +74,10 @@ public class PlantManager {
             System.out.println("Nelze odstranit rostlinu: Chybně zadaná pozice.");
             return;
         }
+        plantRemover(plants, position);
+    }
+
+    private static void plantRemover(List<Plant>plants, int position){
         plants.remove(position);
         System.out.println("\nRostina s pořadovým číslem " + (position + 1) + ". odstraněna ze seznamu.");
         logger.info("Plant removed at position: " + position);
@@ -111,7 +115,7 @@ public class PlantManager {
 
     public static void printPlantsInfo(List<Plant> plants) {
         plants.forEach(plant -> System.out.printf(
-                "\nJméno: [%s], Poznámky: [%s], Zasazeno: [%s], Poslední zálivka: [%s], Frekvence zálivky: [%d] dnů",
+                "\nNázev: [%s], Poznámky: [%s], Zasazeno: [%s], Poslední zálivka: [%s], Frekvence zálivky: [%d] dnů",
                 plant.getName(),
                 plant.getNotes(),
                 plant.getPlanted(),
